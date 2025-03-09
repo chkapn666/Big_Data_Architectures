@@ -85,8 +85,6 @@ class DiningPhilosophers_w_Locks:
 
 
 
-
-
 class DiningPhilosophers_w_Semaphores:
     def __init__(self, total_phils_no=5, meal_size=7):  
         self.meals = [meal_size for _ in range(total_phils_no)]  # array w/ the meal on each philosopher's plate
@@ -144,6 +142,69 @@ class DiningPhilosophers_w_Semaphores:
 
 
 
+class DiningPhilosophers_w_ConditionVariables:
+
+    def __init__(self, total_phils_no=5, meal_size=7):
+        self.total_phils_no = total_phils_no
+        self.meals = [meal_size for _ in range(self.total_phils_no)]
+        self.chopsticks = [False] * self.total_phils_no  # Boolean list indicating if a chopstick is in 
+        # use - at the beginning, all philosophers are 'thinking', so none is in use
+
+        self.lock = threading.Lock()  # a condition variable is always used combined with a lock
+        # here we have only a single lock for accessing shared resources - now, the resources to which we 
+        # require exclusive access is just the 'chopsticks' list
+        self.condition = threading.Condition(self.lock)  # conditional variable for synchronization
+
+        self.status = ['  T  ' for _ in range(self.total_phils_no)]  # Thinking status
+        self.chopstick_holders = ['     ' for _ in range(self.total_phils_no)]  # Who holds chopsticks?
+
+
+    # condition to be used in combination with the conditional variable !!!
+    def can_eat(self, i):
+        """ Check if a philosopher can eat (i.e., both his left AND right chopsticks are free) """
+        left = i
+        right = (i+1) % self.total_phils_no
+        return not self.chopsticks[right] and not self.chopsticks[left]
+    
+
+    def philosopher(self, i):
+        while self.meals[i] > 0:  # the philosopher has not finished eating so he's in the lookout for chopsticks to do so
+            self.status[i] = '  T  ' # starting from a thinking phase
+            time.sleep(random.random())
+
+            self.status[i] = '  _  '  # on the lookout to acquire chopsticks
+
+            with self.condition:
+                while not self.can_eat(i):  # wait until both chopsticks become available 
+                    self.condition.wait()  # wait until it gets notified to see whether then both chopstics have become available
+                    # up to then, it will not touch anything
+                
+                # acquiring chopsticks
+                left = i
+                right = (i+1) % self.total_phils_no
+                # here we're working with the exclusive resource so we ought to use the lock
+                # self.lock.acquire()
+                self.chopsticks[left] = True
+                self.chopsticks[right] = True
+
+                self.chopstick_holders[i] = ' / \\ '
+                self.status[i] = '  E  '  # eating
+                time.sleep(random.random())
+
+                # Eating completed
+                self.meals[i] -= 1
+
+                # releasing chopsticks after eating
+                self.chopsticks[left] = False
+                self.chopsticks[right] = False
+                # done working with the exclusive resource
+                # self.lock.release()
+
+                # Notify all waiting philosophers that a chopstick is now available !
+                self.condition.notify_all()
+
+
+
 def main_lock():
     n = 5 
     m = 9
@@ -154,6 +215,7 @@ def main_lock():
         philosopher.start()
         philosophers.append(philosopher)
 
+    ### this part could be skipped - we're using it for debugging and presentational purposes ###
     while sum(dining_philosophers_w_locks.meals) > 0:
         print("=" * (n*5))
         print("".join(map(str, dining_philosophers_w_locks.status)), 
@@ -163,6 +225,8 @@ def main_lock():
         print("". join(map(str, dining_philosophers_w_locks.chopstick_holders)))
         print(dining_philosophers_w_locks.meals)
         time.sleep(0.1)
+    ### this part could be skipped - we're using it for debugging and presentational purposes ###
+
     for _ in range(n):
         philosopher.join()
 
@@ -178,6 +242,7 @@ def main_semaphore():
         philosopher.start()
         philosophers.append(philosopher)
 
+    ### this part could be skipped - we're using it for debugging and presentational purposes ###
     while sum(dining_philosophers_w_semaphores.meals) > 0:
         print("=" * (n*5))
         print("".join(map(str, dining_philosophers_w_semaphores.status)), 
@@ -187,14 +252,45 @@ def main_semaphore():
         print("". join(map(str, dining_philosophers_w_semaphores.chopstick_holders)))
         print(dining_philosophers_w_semaphores.meals)
         time.sleep(0.1)
+    ### this part could be skipped - we're using it for debugging and presentational purposes ###
+
     for _ in range(n):
         philosopher.join()
 
+
+def main_cv():
+    n = 5 
+    m = 9
+
+    dining_philosophers_w_cv = DiningPhilosophers_w_ConditionVariables(n, m)
+    philosophers = []
+
+    for _ in range(n):
+        philosopher = threading.Thread(target=dining_philosophers_w_cv.philosopher, args=[_])
+        philosophers.append(philosopher)
+        philosopher.start()
+
+    ### this part could be skipped - we're using it for debugging and presentational purposes ###
+    while sum(dining_philosophers_w_cv.meals) > 0:
+        print("=" * (n * 5))
+        print("".join(map(str, dining_philosophers_w_cv.status)), 
+                " : ", 
+                str(dining_philosophers_w_cv.status.count('  E  '))
+            )
+        print("".join(map(str, dining_philosophers_w_cv.chopstick_holders)))
+        print(dining_philosophers_w_cv.meals)
+        time.sleep(0.1)
+    ### this part could be skipped - we're using it for debugging and presentational purposes ###
+
+
+    for philosopher in philosophers:
+        philosopher.join()
 
 
 
 if __name__ == '__main__':
     #main_lock()
-    main_semaphore()
+    #main_semaphore()
+    main_cv()
 
 
