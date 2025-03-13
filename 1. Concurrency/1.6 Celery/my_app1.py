@@ -1,7 +1,7 @@
 from celery import Celery
 from datetime import datetime
 
-app = Celery('app1', broker='amqp://localhost', backend='redis://localhost')
+app = Celery('my_app1', broker='amqp://localhost', backend='redis://localhost')
 
 @app.task
 def ts(msg):

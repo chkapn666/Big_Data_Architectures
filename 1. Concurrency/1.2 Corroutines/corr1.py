@@ -10,13 +10,13 @@ def corr1(ss):
 
 
 # Sample usage
-# >>> g = corr1('hail hitler')
+# >>> g = corr1('hail satan')
 # >>> next(g)
 # Send me a string
 # >>> g.send("tsonta")
 # >>> g.send("heil")
-# >>> g.send("heil hitler heil")
-# >>> g.send("hail hitler hail")
-# Found hail hitler
+# >>> g.send("heil satan heil")
+# >>> g.send("hail satan hail")
+# Found hail satan
 # >>> g.close()
 # Quitting
