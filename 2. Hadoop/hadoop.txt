@@ -1,1 +1,0 @@
-hadoop is an open source software for reliable, scalable distributed computing.
