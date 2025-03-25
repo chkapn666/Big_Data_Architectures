@@ -7,12 +7,12 @@ NITEMS = 30
 # Our buffer here is essentially a shared log of print jobs. It is 10-elements long, yet we have 30 items to add to it.
 # Thus, we need to make the updating of the buffer cyclical => this takes place through the command in line 34.
 BUFSIZE = 10
-buffer = [-1] * BUFSIZE  # in this shared buffer, producers can produce items - there must exist space for them to do so
-# at the same time, consumers can consume items - there must be data for them to consume
-# plus, when the buffer is full => further producers should be blocked until some consumer consumes sth
-# plus, when the buffer is empty => further consumers should be blocked until producers append a new print job to the shared buffer
+buffer = [-1] * BUFSIZE  # In this shared buffer, producers can produce items - there must exist space for them to do so.
+# At the same time, consumers can consume items - there must be data for them to consume.
+# PLUS when the buffer is full => further producers should be blocked until some consumer consumes sth.
+# PLUS when the buffer is empty => further consumers should be blocked until producers append a new print job to the shared buffer.
 # Without controlling the access to the buffer, we might see the previous rules being violated, e.g. by getting consumers that 
-# consume '-1', i.e. try to consume from the empty buffer + the slots of the buffer are accessed in an unruly manner
+# consume '-1', i.e. try to consume from the empty buffer + the slots of the buffer are accessed in an unruly manner.
 nextin = 0
 nextout = 0
 

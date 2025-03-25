@@ -41,3 +41,10 @@ t2.start()
 
 t1.join()
 t2.join()
+
+
+# This is not enough! We're still seeing consumers consuming '-1' from the buffer; 
+# What we have done is that we have protected concurrent access to the shared buffer / exclusive resource, 
+# yet a lock is not enough to handle buffer fullness or emptiness! 
+# Thus, the current logic lets the producer write to the buffer even if the buffer is full.
+# Moreover, it lets the consumer read from the buffer even if the buffer is empty. 

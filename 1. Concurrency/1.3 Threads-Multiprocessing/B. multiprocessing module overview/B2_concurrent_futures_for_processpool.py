@@ -1,4 +1,4 @@
-"""Advancement: introducing the ProcessPoolExecutor of the 'concurrent.futures' module 
+"""Introducing the ProcessPoolExecutor of the 'concurrent.futures' module 
 to expand the true concurrency execution of python code"""
 
 import time 
@@ -25,10 +25,8 @@ def main():
 
         # fetching the results as they are concurrently computed:
         for f in concurrent.futures.as_completed(results):
-            # TODO: if we needed to handle any exceptions, we would do it here, 
-            # working on the 'Future' object
-            print(f.result())  # each f, i.e. each element of the 'results' list, 
-            # is a 'Future' object
+            # TODO: if we needed to handle any exceptions, we would do it here, working on the 'Future' object
+            print(f.result())  # each f, i.e. each element of the 'results' list, is a 'Future' object
 
 
     # else i could get results in the same order as they have been inputted

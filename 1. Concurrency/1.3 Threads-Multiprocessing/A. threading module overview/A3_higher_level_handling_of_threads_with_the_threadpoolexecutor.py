@@ -1,7 +1,4 @@
-"""Advancement: introducing the threads pool executor"""
-
-# Why use threading? -> to  achieve the speedup of our program via running various 
-# processes simultaneously instead of "synchronously". 
+"""Introducing the threads pool executor"""
 
 import time 
 # import threading  
@@ -16,14 +13,15 @@ def do_something(seconds):
     return 'Done Sleeping...'
 
 
-# with concurrent.futures.ThreadPoolExecutor() as executor:
-#     # submit method - makes a method to be executed and returns a 'Future' object
-#     f1 = executor.submit(do_something, 1)  # (fnc_name, arguments)  - if i had multiple arguments -> tuples
-#     # We can use the 'Future' value to see if the thread is running, if it has completed execution, 
-#     # or if it is done producing a result
-#     f2 = executor.submit(do_something, 1)
-#     print('f1 result:', f1.result())  # it fetches the result once it is produced and prints it out
-#     print('f2 result:', f2.result())
+"""
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    # submit method - makes a method to be executed and returns a 'Future' object
+    f1 = executor.submit(do_something, 1)  # (fnc_name, arguments)  - if i had multiple arguments, I would specify them using tuples
+    # We can use the 'Future' value to see (a) if the thread is running, (b) if it has completed execution, or (c) if it is done producing a result
+    f2 = executor.submit(do_something, 1)
+    print('f1 result:', f1.result())  # it fetches the particular result once it is produced and prints it out
+    print('f2 result:', f2.result())
+"""
 
 ###########
 
@@ -42,7 +40,7 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
 with concurrent.futures.ThreadPoolExecutor() as executor:
     secs = [5,4,3,2,1]
     results = executor.map(do_something, secs)  # it does NOT return 'future' objects; it returns 
-    # results AFTER computing them, and stores them in the order they started executing
+    # actual results AFTER computing them (in the same order as the specified input arguments), and stores them in the order they started executing
     # so here we're waiting for the thread assigned the 5-sec sleep before printing the rest
     for result in results:
         print(result)
