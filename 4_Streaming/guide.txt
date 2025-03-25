@@ -1,0 +1,11 @@
+open 2 bash terminals
+
+on the first one, do `python 2_socket_source.py` - now it will be waiting for a 
+client speaking to that port in order to capture changes 
+
+on the second one, do `cat myfile.txt | nc -lk 9999`
+
+we can also send text data in real time by doing 
+`nc -lk 9999`
+
+and then just typing stuff
