@@ -11,7 +11,7 @@ from mrjob.job import MRJob
 cols = 'Name,Gender,AnnualSalary,GrossPay'.split(',')
 
 class SalaryMax(MRJob):
-    linec = 0 
+    linec = 0  # we're working with an input file containing a leading header line, so we need to make special considerations to avoid working with that 
     
     def mapper(self, _, line):  # convert each line into a dictionary
         SalaryMax.linec += 1 
@@ -27,8 +27,9 @@ class SalaryMax(MRJob):
         
     
     def reducer(self, key, values):
+        # for each key, we have a list of tuples like (numeric_value, name_string)
         topten = list(values)
-        topten.sort(reverse=True)
+        topten.sort(reverse=True)  # the lists are sorted based on their first value; this is why we have put the numeric values first - so max salary/pay
         for p in topten[:10]:
             yield key, p
             

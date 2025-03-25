@@ -15,11 +15,12 @@ WORD_RE = re.compile(r"[\w']+")
 
 class MRMostUsedWord(MRJob):
     
-    def mapper_get_words(self, _, line):
+    def mapper_get_words(self, _, line):  # the input text file is always read line-by-line
         # yield each word in the line
         for word in WORD_RE.findall(line):
             yield (word.lower(), 1)  # case-insensitive comparisons 
             # returns key-value pairs like (1st_word,1), (2nd_word,1), (1st_word,1), ... 
+
     def combiner_count_words(self, word, counts):
         yield (word, sum(counts))  # calculating the total count for each word/key of the previously 
         # produced key-value pairs
@@ -33,7 +34,7 @@ class MRMostUsedWord(MRJob):
     
     def reducer_find_max_word(self, _, word_count_pairs):
         yield max(word_count_pairs)  # returns a single tuple with its first element being the 
-        # total count/freq of the most popular word, and the second one being the actual utterrance of this word
+        # total count/freq of the most popular word, and the second one being the actual utterance of this word
     
     def steps(self):
         return [

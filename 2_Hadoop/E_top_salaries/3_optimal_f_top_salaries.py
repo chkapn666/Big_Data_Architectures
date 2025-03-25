@@ -31,6 +31,7 @@ class salarymax(MRJob):
     ## "Core Mapper"
     # This is the mapping fnc to implement as long as we have data to work on
     def mapper(self, _, line):
+        # as before, this is the one to read the input text file line by line, ignoring the leading header line
         salarymax.linec += 1
         
         # ignoring the top/header line
@@ -39,17 +40,21 @@ class salarymax(MRJob):
         
         # normally processing the rest of the lines
         row = dict(zip(cols, line.split(',')))
-        if row['Gender'] == 'female':
+        if row['Gender'] == 'F':
             
             # we push all new key-val pairs we come across (aka all the lines of the input file, aka all the available data)
+            # The following line turns our 'self.salaries' list of tuples into a heap object. Heap objects implement an extremely efficient
+            # algo for creating a tree-like structure that sorts elements in ascending order - here we add numeric values as the first element of tuples, so they will
+            # be sorted on those 
             heapq.heappush(self.salaries, (float(row['AnnualSalary']), row['Name']))  
-            # making sure we only keep the 10 x (key-val) pairs with the min AnnualSalary
+            # making sure we only keep the 10 x (key-val) pairs; using 'pop', we get rid of the MINIMUM salary object each time, so at the end 
+            # there will remain those tuples that have the max 'AnnualSalary' values
             if len(self.salaries) > 10:
                 heapq.heappop(self.salaries)  # A heap looks like a tree, with the root node having the min value. WARNING: if the elements of a heap are iterators, 
                 # the heap only compares them via considering their FIRST non-iterator element's value - so we add the sum we want to compare as the first
                 # element of the tuples we push into the heap structure
             
-            # same with 'GrossPay'
+            # same with 'GrossPay' - turn it into a heap and start getting rid of the minimum values
             heapq.heappush(self.gross, (float(row['GrossPay']), row['Name']))
             if len(self.gross) > 10:
                 heapq.heappop(self.gross)
@@ -67,6 +72,11 @@ class salarymax(MRJob):
 
     # Intermediate results from its mapping finalizer are shuffled 
     
+    # So this whole implementation is much faster than the previous because we transfer part of the whole processing to the mapper, which is implemented
+    # on the node where the data are initially stored - this way, we prevent a big proportion of the network overhead we would incur if we were to transfer all
+    # data points to the node where the reducer would take place. 
+
+
     # Then, they are fed into the reducer for final result production
     def reducer(self, key, values):
         topten = list(values)
