@@ -9,12 +9,17 @@ buffer = [-1] * BUFSIZE
 nextin = 0
 nextout = 0
 
+# The previous solution, making use only of threading.Lock synchronization primitives, was not enough to provide a satisfactory solution to our problem. 
+# Even though locks could ensure the exclusive access to our shared resource, they are not capable to handle buffer fullness or emptiness. 
 # A way to completely solve this issue is via using semaphores. Semaphores are also always linked to a lock, so we first define a lock before defining the semaphore.
-mutex = threading.Lock()
-empty = threading.Semaphore(BUFSIZE)  # empty reaching 0 will mean that the buffer is empty
-# + at the very beginning, all buffer slots are empty
-full = threading.Semaphore(0)  # full reaching BUFSIZE will mean that the buffer is full
-# + at the very beginning, 0 buffer slots are full
+# ===== Synchronization Primitives =====
+mutex = threading.Lock()            # Protects buffer access (critical section; the buffer is an exclusive resource; no more than one thread should access it at a time)
+empty = threading.Semaphore(BUFSIZE)  # Tracks EMPTY slots (starts full: BUFSIZE available)
+# This means that when 'empty' is available for acquisition, producers have remaining room in the buffer to write at. 
+# When it is not available / zero, then producers should be blocked from producing any further, until at least one consumer consumers one value from the buffer. 
+full = threading.Semaphore(0)        # Tracks FILLED slots (starts empty: 0 available)
+# This means that when 'full' is available, then there are values in the buffer for consumers to consume.
+# When it is not available / zero, consumers should be blocked from consuming any further, until at least one producer writes one more value to the buffer.
 
 def producer():
     global nextin
