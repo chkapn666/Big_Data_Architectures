@@ -8,7 +8,7 @@ log = []  # the `log` object requires exclusive handling by threads trying to ac
 # the actions we try to document/"log" actually take place in an ordered and logical manner + they are documented in an
 # easy to parse and understand manner.
 # However, here it gets accessed in an uncontrollable way, so we see steps of transactions of the two jobs being intertwined, 
-# and not executed in order
+# and not executed in order.
 
 
 def do_transaction(jobname, tasknum, sleeptime):

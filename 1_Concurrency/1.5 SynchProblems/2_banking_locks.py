@@ -4,8 +4,10 @@ import random
 
 balance = 1000
 lock = threading.Lock()  # I will add a lock to the resource that I require exclusive access to - the balance
-# thus, when one of the threads tries to alter its value, the other one won't be able to do the same
-# This solves the problem described in the 'banking.py' - no matter how many times I run the algo, I get the very same results
+# Thus, when one of the threads tries to alter its value, the other one won't be able to do the same
+# This solves the problem described in the 'banking.py' - no matter how many times I run the algo, I get the very same results. 
+# So by adding a single lock we prevent the aforementioned race conditions simply by ensuring that operations on the global 'balance' 
+# happen atomically (either happens all the way till the end, or does not happen at all). 
 
 def deposit(amount):
     global balance
