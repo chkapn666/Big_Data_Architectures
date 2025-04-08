@@ -5,13 +5,32 @@ import random
 NITERS = 30
 NPROCESSES = 5
 
-BUFSIZE = 10  # assumed size of the available printing queue
-# The buffer needs to also retain the printing process' id for logging reasons
-buffer = [-1] * BUFSIZE
-nextin = 0
-nextout = 0
+# My solution is an application of the classic bounded-buffer ("producer-consumer") problem, where
+# - Producers produce items into a buffer.
+# - Consumers consume items from the buffer. 
+# - Mutual exclusion and full/empty signalling are required to ensure correctness. 
+# Here, the buffer will be a list of tuples, identifying submitted printing jobs and the current iteration pending for them to complete.
+# The lock ('mutex') ensures exclusive access to the shared variable ('buffer'). This prevents both threads from trying to modify
+# 'buffer' at the same time, which could lead, for example, to the consumers consuming invalid/incomplete data (aka to print a job where there actually
+# is none, which is represented by the '-1' values of the buffer).
+# The semaphores are used to impose strict rules of inter-thread communication and coordination. This way, 
+# we enforce the desired behavior, which is expressed in the following rules:
+# - A printing job needs to be submitted before the printer can work on it.
+# - If there is a very high printing workload (aka the jobs that processes are trying to submit is larger than the size 
+# of the buffer that the printer can retain), then further job submissions should be blocked. 
+# This way, these two synchronization primitives prevent 'race conditions' that could lead to 'state inconsistencies'.
 
-# The previous solution, making use only of threading.Lock synchronization primitives, was not enough to provide a satisfactory solution to our problem. 
+
+# Here, we actually have multiple producers (aka processes submitting printing jobs), and only one consumer (the single printing machine
+# which retains a single printing job queue). 
+BUFSIZE = 10  # assumed size of the available printing queue
+# The buffer will hold elements of the type (printing_process_id, current_iteration_of_this_process).
+# This is good for logging & debugging reasons.
+buffer = [-1] * BUFSIZE
+nextin = 0  # this is the offset that will show were producers can add values to the buffer next. 
+nextout = 0  # this is the offset that shows the printer/consumer where it can consume next from the buffer. 
+
+# Making use only of threading.Lock synchronization primitives would not be enough to provide a satisfactory solution to our problem. 
 # Even though locks could ensure the exclusive access to our shared resource, they are not capable to handle buffer fullness or emptiness. 
 # A way to completely solve this issue is via using semaphores. Semaphores are also always linked to a lock, so we first define a lock before defining the semaphore.
 # ===== Synchronization Primitives =====
@@ -58,16 +77,20 @@ def printer():
         sleep(0.1 * random.random())
 
 
-t1 = threading.Thread(target=printer)  # there is one printer thread running
+### Defining the threads to execute ###
+t1 = threading.Thread(target=printer)  # there is only one consumer thread running (identified by the single printer machine itself)
 t1.start()
 
-# There are multiple ('NPROCESSES') process threads running
+# There are multiple ('NPROCESSES') producer threads running
 process_threads = []
 for _ in range(NPROCESSES):
-    t = threading.Thread(target=process, args=[_])  # the 'args' argument needs to take in a list as a value
+    t = threading.Thread(target=process, args=[_])  # the 'args' argument needs to take in a list as a value,
+    # so here I am inserting to it a list with a single element.
     t.start()
     process_threads.append(t)
 
+
+### Starting the concurrent execution of threads ###
 t1.join()
 for thread in process_threads:
     thread.join()

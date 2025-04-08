@@ -1,5 +1,7 @@
 ####### Exercise 1 #######
 
+
+### Importing libraries and dependencies ###
 import threading
 import time
 import random
@@ -7,17 +9,20 @@ import concurrent.futures
 import multiprocessing
 import math
 
-# function breaking down the range(max_num) to a specified number of subranges
-def calc_subranges(max_num, subranges_no):  # I use the cpu count as the default for the number of subranges to be checked to make sure that there will be exactly ony cpu core that each thread will be able to be assigned to
+
+### Defining basic functions ### 
+def calc_subranges(max_num, subranges_no):  
+    """This function breaks down the range(max_num) to a specified number of sub-ranges"""
     # Step 2.1: Define range partitioning
     step = max_num // subranges_no  # Step size
     subranges = [range(i * step, (i + 1) * step) for i in range(subranges_no)]
 
-    return subranges  # returns a list of 'range' python object 
+    return subranges  # returns a list with 'range' python objects as elements
 
 
-# function checking whether a particular number is prime
+
 def is_prime(n):
+    """This function checks whether a given number is prime"""
     if n < 2:
         return False
     for i in range(2, int(math.sqrt(n)) + 1):
@@ -25,27 +30,35 @@ def is_prime(n):
             return False
     return True
 
-# function counting how many numbers of a specified subrange are prime
-def primes_of_range(subrange):    
+
+
+def primes_of_range(subrange):   
+    """This function calculates the count of prime numbers in a given subrange""" 
     return sum(1 for n in subrange if is_prime(n))  
 
-def main(max_num, processes_to_run):
+
+
+### Main Function of Execution Runtime ###
+def main(max_num, processes_to_run):  # The assignment asks for 
     start = time.perf_counter()
-    total_count_primes = 0
+    total_count_primes = 0  # This is a master counter; I break down the job of counting the primes in the entire range;
+    # I work on multiple subranges concurrently, and I update the total counter at the same time.
     
     with concurrent.futures.ProcessPoolExecutor(max_workers=processes_to_run) as executor:
         results = [executor.submit(primes_of_range, calc_subranges(max_num, processes_to_run)[_]) 
-                  for _ in range(processes_to_run)]
+                        for _ in range(processes_to_run)]  # so i'm running #(processes_to_run) processes with 
+                        # a number of workers to be used at maximum exactly equal to that, leading the OS to 
+                        # map each of the processes to a single worked
         
         for f in concurrent.futures.as_completed(results):
-            total_count_primes += f.result()
+            total_count_primes += f.result()  # updating the total counter as soon as a result for a subrange has been produced
     
     elapsed = time.perf_counter() - start
     return elapsed, total_count_primes
 
 if __name__ == "__main__":
     print("# Performance with linear ranges")
-    print(f"#\t\t\t16\t\t8\t\t4\t(nprimes)")
+    print(f"#\t16\t8\t4\t(nprimes)")
     
     for max_num in [1000, 10000, 100000, 1000000, 10000000, 100000000]:
         times = {}

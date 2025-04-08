@@ -1,4 +1,4 @@
-####### Exercise 1 #######
+####### Exercise 2 #######
 
 import threading
 import time
@@ -7,13 +7,14 @@ import concurrent.futures
 import multiprocessing
 import math
 
-# function breaking down the range(max_num) to a specified number of subranges
-def calc_minmax_of_file(file_path):  # I use the cpu count as the default for the number of subranges to be checked to make sure that there will be exactly ony cpu core that each thread will be able to be assigned to
-    # Step 2.1: Define range partitioning
+
+def calc_minmax_of_file(file_path):  
+    """This function performs the calculation of the min and max integer value of a single specified file."""
     min, max = float('inf'), float('-inf')
                        
     with open(file_path, 'r') as file:
         for line in file:
+            # Each line ought to contain a single integer value. I need to perform exception handling to ensure this. 
             try:
                 num_considered = int(line.lstrip())
                 if num_considered < min:
@@ -23,12 +24,15 @@ def calc_minmax_of_file(file_path):  # I use the cpu count as the default for th
             except:
                 raise ValueError(f"Found a non integer value in the file {file_path}")
   
-    return min, max
+    return min, max  # returns a single tuple containing the paired desired values 
+    # per file, in the form: (minimum_integer, maximum_integer)
+
+
 
 def main(files):
-
+    """Main Function of Execution"""
     start = time.perf_counter()
-    mins, maxs = [], []
+    mins, maxs = [], []  # lists containing the min and max values found per file examined
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         results = executor.map(calc_minmax_of_file, files)
@@ -41,7 +45,9 @@ def main(files):
     return elapsed, mins, maxs
 
 if __name__ == "__main__":
-    files = ['f1.txt', 'f2.txt', 'f3.txt', 'f4.txt']
+    # The user needs to make sure that they run this script in the same directory where the underlying 
+    # text files are stored
+    files = ['f1.txt', 'f2.txt', 'f3.txt', 'f4.txt'] 
 
     elapsed, mins, maxs = main(files)
     print(f"The total operation lasted for {elapsed} seconds.")
