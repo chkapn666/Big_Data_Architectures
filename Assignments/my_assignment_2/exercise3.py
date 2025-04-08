@@ -5,13 +5,13 @@ import numpy as np
 
 class StockTicker(MRJob):
     def mapper(self, _, line):
-        # ingest json information
+        # ingest json information - make sure that we have all the fields that we need, in the form required
         try:
             row = json.loads(line)
             # now 'row' is a python dictionary with keys: 'TICK', 'PRICE', 'TS'
             # I need to ingest them so as to bring them to their proper data types
             tick = row['TICK']
-            price = float(row['PRICE'])  # 🔧 cast to float
+            price = float(row['PRICE'])  #  we read everything as a string value; need to cast into float to make sure it is valid
             ts = datetime.datetime.strptime(row['TS'], "%Y-%m-%d %H:%M:%S.%f")  
             # I still ingest this even though it is not needed, to make sure
             # that I only work with data coming from lines that are properly configured/formatted
@@ -21,6 +21,9 @@ class StockTicker(MRJob):
         yield tick, price
         # now each mapper will give pairs like ("AMZN", amzn_price1), ("AMZN", amzn_price2), ("TSLA", tesla_price1), ...
 
+    # To be able to work on the results for a single tick, I first need to have gathered all its relevant values somewhere. 
+    # Else, if I was to calculate them inside of the mapper functions and yield different min/max/count values for each ticker, 
+    # there would be produced a ton of unique keys, making handling each extremely problematic.
     # so the reducer will receive one key-value pair per tick, like 
     # ("AMZN", [amzn_price1, amzn_price2, ...])
     def reducer(self, key, values):
@@ -32,9 +35,8 @@ class StockTicker(MRJob):
             'spread': 100 * (np.max(prices) - np.min(prices)) / np.mean(prices)
         }
         
-        print(f"Statistics for {key}: \n Min Price = {round(item['min'], 2)} \n Max Price = {round(item['max'], 2)} \n Average Price = {round(item['mean'],2)} \n Spread = {round(item['spread'], 2)}")
         
-        yield key, item
+        yield key, f"Min Price = {round(item['min'], 2)}. Max Price = {round(item['max'], 2)}. Average Price = {round(item['mean'],2)}. Spread = {round(item['spread'], 2)}"
 
 
 if __name__ == "__main__":

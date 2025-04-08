@@ -9,6 +9,9 @@ class EarthquakeAnalyzer(MRJob):
         self.all_records = []
 
     def mapper(self, _, line):
+        # Each mapper is assigned a particular portion of a file, which is expressed as a particular group of lines. 
+        # Each mapper will parse their delegated portion line by line. 
+        # I need to make sure that every line parsed comes in the proper form (aka has all the required fields and in the correct format), or I ignore it.
         row = line.strip().split(',')
         try:
             ts = datetime.datetime.strptime(row[0], "%m/%d/%Y %H:%M")
@@ -23,10 +26,12 @@ class EarthquakeAnalyzer(MRJob):
             return  # Ignore bad lines
 
     def mapper_final(self):
-        top10 = heapq.nlargest(10, self.all_records, key=lambda x: x[0])
+        # So each mapper first parses the entirety of lines delegated to it, and saves all relevant earthquake records 
+        # into a list. It then iterates through the list to extract all the useful information. 
+        top10 = heapq.nlargest(10, self.all_records, key=lambda x: x[0])  # this way, each mapper finds its top 10 earthquakes
         athens_records = []
 
-        for quake in self.all_records:
+        for quake in self.all_records:  # checking every single detected record for the desired attributes
             magnitude, ts, lat, lon, _ = quake
 
             # Q2: Count quakes per year/month after 2010
@@ -46,7 +51,7 @@ class EarthquakeAnalyzer(MRJob):
 
         # Q1: Emit top-10 overall (with timestamp formatted)
         for magnitude, ts, lat, lon, depth in top10:
-            yield "q1", (magnitude, ts.strftime("%Y-%m-%d %H:%M"), lat, lon, depth)
+            yield "q1", (magnitude, ts.strftime("%Y-%m-%d %H:%M"), lat, lon, depth)  # datetime converted to string to communicate to the reducer
 
         # Q4: Emit possible Athens top 5
         top5_athens = heapq.nlargest(5, athens_records, key=lambda x: x[0])
@@ -57,7 +62,7 @@ class EarthquakeAnalyzer(MRJob):
     def reducer(self, key, values):
         if key == "q1":
             # values are tuples like (magnitude, "YYYY-MM-DD HH:MM", lat, lon, depth)
-            top10 = heapq.nlargest(10, values, key=lambda x: x[0])
+            top10 = heapq.nlargest(10, values, key=lambda x: x[0])  # i find the top 10 earthquakes from the combined results of all mappers
             for magnitude, ts_str, *_ in top10:
                 # `datetime` values have already been converted to string to be transferred to the reducer, because else they are not serializable by default
                 date_str, time_str = ts_str.split()
