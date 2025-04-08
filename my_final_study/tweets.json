@@ -1,22 +1,5 @@
-[
-  {
-    "user": "anon-gr",
-    "message": "Today's news",
-    "ts": "2020-09-02T10:32:41"
-  },
-  {
-    "user": "generationx",
-    "message": "Coronavirus sad update...",
-    "ts": "2020-09-01T22:42:04"
-  },
-  {
-    "user": "anon-gr",
-    "message": "It is a sunny day",
-    "ts": "2020-08-31T03:22:11"
-  },
-  {
-    "user": "generationx",
-    "message": "Back from summer holidays",
-    "ts": "2020-08-29T20:57:44"
-  }
-]
+{ "user": "anon-gr", "message": "Todays news", "ts": "2020-09-02T10:32:41"}
+{"user":"generationx", "message":"Coronavirus update...", "ts":"2020-09-01T22:42:04"}
+{"user":"anon-gr", "message":"It is a sunny day", "ts":"2020-08-31T03:22:11"}
+{"user":"generationx", "message":"Back from summer holidays", "ts":"2020-08-29T20:57:44"}
+{"user":"generationx", "message":"New vaccine for coronavirus", "ts":"2020-11-01T13:29:04"}
