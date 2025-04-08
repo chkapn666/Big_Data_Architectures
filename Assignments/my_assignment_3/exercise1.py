@@ -14,25 +14,35 @@ spark = SparkContext("local[1]", "app")
 # Then i will be ready to ingest it:
 cols = 'As Of,NAV per Share,Daily NAV Change,Daily NAV Change %'.split(',')
 
-rdd = spark.textFile('file:///' + os.getcwd() + '/BGF-World-Technology-Fund-Class-A2-EUR_fund_noH.csv')
+rdd = spark.textFile('file:///' + os.getcwd() + '/BGF-WTF-A2-EUR_fund1.csv')#_noH.csv')
 
 
 import datetime 
 
 def parse(line):
+    """Function that takes care of parsing and importing data only from valid lines of the input file."""
     fields = line.split(',')
     try:
-        date = datetime.datetime.strptime(fields[0], "%d/%m/%Y")  # Correct format
+        date = datetime.datetime.strptime(fields[0], "%d-%b-%y") 
         nav = float(fields[1])
         daily = float(fields[2])
         pct = float(fields[3])
-        return (nav, daily, pct)
+        return (nav, daily, pct, date)
     except:
         return None
 
+print("LINES OF THE INITIAL RDD", rdd.count())
 
-parsed_rdd = rdd.map(parse).filter(lambda x: x is not None)
 
+parsed_rdd = rdd.map(parse).filter(lambda x: x is not None).cache()  # this rdd will be used multiple times in my code,
+    # so I cache it in primary memory to avoid spark from performing the transformations that led to it again and again
+print("LINES OF THE PARSED RDD", parsed_rdd.count())  # it will be rdd.count() - 1, because it ignores the header line
+
+
+
+
+### Answering questions 1 and 2 ###
+parsed_rdd_q1_q2 = parsed_rdd.map(lambda x: (x[0], x[1], x[2]))
 
 # So i can iterate over them and calculate the max & min daily and pct changes
 # At the same time, I can accumulate the total count of values, their total sum, and the min and max vals
@@ -43,7 +53,7 @@ parsed_rdd = rdd.map(parse).filter(lambda x: x is not None)
 # Aggregate: zerovalue like (count, sum of NAV, min/max of daily change, min/max of pct change)
 zero = (0, 0.0, float('inf'), float('-inf'), float('inf'), float('-inf'))  # count, sum_nav, min_daily, max_daily, min_pct, max_pct
 
-# Within-partition processing (happening directly on the nodes where data is stored)
+# Within-partition processing (happening directly on the nodes where data is stored):
 # Each worker will be appointed (in the background) various lines of this file; 
 # I want each of them to count the number of NAV values they come across and their sum,
 # plus the min daily/pct and max daily/pct values they come across.
@@ -58,7 +68,7 @@ def seqOp(acc, v):
         min(min_daily, daily),
         max(max_daily, daily),
         min(min_pct, pct),
-        max(max_pct, pct)  # fixed typo
+        max(max_pct, pct) 
     )
 
 # Combination of intermediate results to produce final results:
@@ -75,10 +85,41 @@ def combOp(acc1, acc2):
 
 
 
-count_nav, sum_nav, min_daily, max_daily, min_pct, max_pct = parsed_rdd.aggregate(zero, seqOp, combOp)
+count_nav, sum_nav, min_daily, max_daily, min_pct, max_pct = parsed_rdd_q1_q2.aggregate(zero, seqOp, combOp)
 avg_nav = sum_nav / count_nav
 
-print(f"Total NAV Entries: {count_nav}")
-print(f"Average NAV: {avg_nav:.4f}")
-print(f"Min Daily Change: {min_daily}, Max Daily Change: {max_daily}")
-print(f"Min % Change: {min_pct}, Max % Change: {max_pct}")
+print(f"Total NAV Entries for the full history: {count_nav}")
+print(f"Average NAV for the full history: {avg_nav:.4f}")
+print(f"Min Daily Change for the full history: {min_daily}, Max Daily Change: {max_daily}")
+print(f"Min % Change for the full history: {min_pct}, Max % Change: {max_pct}")
+
+std_nav = parsed_rdd_q1_q2 \
+            .map(lambda x: (x[0] - avg_nav) ** 2) \
+            .mean()
+std_nav = std_nav ** 0.5
+print(f"Std NAV for the full history:", round(std_nav, 2), "monetary units.")
+
+
+
+### Answering question 3 ### 
+parsed_rdd_q3 = parsed_rdd.filter(lambda x: x[-1].year == 2020)
+count_nav, sum_nav = parsed_rdd_q3.map(lambda x: x[0]) \
+                .aggregate(
+                    (0,0),
+                    (lambda acc, v: (acc[0]+1, acc[1]+v)),
+                    (lambda acc1, acc2: (acc1[0]+acc2[0], acc1[1]+acc2[1]))
+                )           
+print('Avg nav for 2020:', round(sum_nav/count_nav, 2))
+
+
+### Answering question 4 ### 
+# I create (month,single_nav) key-value pairs per sub-rdd
+# I reduce by key to find the total count and total sum for each key
+# I mapValues to make sure that my final calculation is performed PER KEY (cannot control this when using '.aggregate'!!!)
+rs = parsed_rdd \
+                .map(lambda x: ((x[-1].year,x[-1].month), (1, x[0]))) \
+                .reduceByKey(lambda x,y: (x[0]+y[0],x[1]+y[1])) \
+                .mapValues(lambda x: round(x[1] / x[0],2)) \
+                .sortBy(lambda x: (x[0][0], x[0][1]), ascending=False) \
+                .collect()
+print(rs)
