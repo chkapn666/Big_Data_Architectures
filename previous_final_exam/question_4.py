@@ -32,7 +32,7 @@ def parse(str_row):
 
 rdd = spark.textFile('file:///' + os.getcwd() + '/CoffeeShop.csv') \
     .map(parse) \
-    .filter(lambda x: x is not None)
+    .filter(lambda x: x is not None)  # ignoring invalid lines
 
 #print(rdd.take(5))  # peaking into the formulation of the super-rdds contents
 
@@ -44,9 +44,11 @@ for month, (total_sum, total_count) in q12_sol.collect():
 
 
 ### Question 3 ### 
+# !!! Comparison of a column's values to a date happens as if I am comparing strings !!!
 q3_rdd = rdd.filter(lambda x: (x[3] == "Coffee") & (x[0] == "06-2023")) \
             .map(lambda x: (1,1)) \
-            .reduceByKey(lambda x, y: x + y)
+            .reduceByKey(lambda x, y: x + y)  # i mapped all relevant lines/sub-rdds to a particular common 
+            # key (1) - I could have used whatever non-null key!
 print(f"There were {q3_rdd.collect()[0][1]} transactions in June 2023 which contained Coffee")
 
 

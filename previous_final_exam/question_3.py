@@ -37,7 +37,7 @@ class BtcAnalyzer(MRJob):
         if close < (high + low) / 2:
             yield "Lower_Avg_of_HL", 1  # facilitates Q3 the same way as we treat Q2
 
-        yield "Daily_High", (high, date.strftime("%Y-%m-%d"))   # for Q4 - i will sort in descending order and print out the dates and prices
+        yield "Daily_Close", (close, date.strftime("%Y-%m-%d"))   # for Q4 - i will sort in descending order and print out the dates and prices
 
         yield f"Q5_{date.year}_{date.month}", close  # for Q5 - i will calc the mean close per month and only keep those who have avg close in [20_000, 25_000]
 
@@ -47,7 +47,7 @@ class BtcAnalyzer(MRJob):
     # For Q1 -> ("BTC_Closing_2020", [daily_close1, daily_close2, ...]) => AVERAGE
     # For Q2 -> ("Over_60K", [1,1,1,1,1, ...]) => SUM
     # For Q3 -> ("Lower_Avg_of_HL", [1,1,1,1, ...]) => SUM
-    # For Q4 -> ("Daily High", [(high1, date1), (high2, date2), ...]) => SORT in descending order and only keep the first 10
+    # For Q4 -> ("Daily_Close", [(close1, date1), (close2, date2), ...]) => SORT in descending order and only keep the first 10
     # For Q5 -> ((year1, month1), [close11_1, close11_2, ...]), ((year2, month2), [close12_1, close12_2, ...]) => avg each and filter and show in ascending order
     def reducer(self, key, values):
         if key == "BTC_Closing_2020":
@@ -62,7 +62,7 @@ class BtcAnalyzer(MRJob):
             values = list(values)
             yield "Q3_Count_Days_Closing_Less_Avg_High_Low", float(np.sum(values))
 
-        elif key == "Daily_High":
+        elif key == "Daily_Close":
             values = list(values)
             values = sorted(values, reverse=True)[:10]
             for value in values:

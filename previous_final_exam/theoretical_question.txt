@@ -1,0 +1,144 @@
+Question 5
+----------
+[5.1] There are two sensors that send data to a topic called 'PressData'. This
+makes the two sensors being two different 'Producers', each of them sending 
+data whose order needs to be strictly upheld in order for its analysis to draw valid conclusion.
+
+We know that Kafka guarantees message ordering per-partition, not per topic.
+So since we need to ensure strict message ordering and not risk getting mixed 
+messages from the different producers due to them sending data ("writing") with
+different speeds, we need to implement two different partitions, and each will only
+right to a particular one. 
+
+So we would define/create our kafka topic "PressData" with two partitions, and make sure 
+that each message sent by a producer/sensor has the same key each time, so that kafka
+ensures it is sent to the same partition each time.
+
+At the same time, there are two applications that perform independent analytics, so they
+will need access to the same data. 
+Each consumer group in kafka retains its own offset showcasing the position it can read from
+across partitions. Kafka implements load balancing; each consumer of a consumer group may read messages
+from multiple partitions, but the messages of one partition can only be consumed by a single consumer. 
+So different consumers belonging to the same consumer group cannot consume the same messages. 
+As such, we need to represent the two applications (A1, A2) as two different consumer groups.
+
+
+
+
+[5.2]
+Since this application needs to be available 24/7/365, it means that it must continue 
+to operate, even if nodes inb a cluster crash, or some hardware or software parts are down due to upgrades. 
+At the same time, it also needs to continue to operate even in the case of network partitions (some parts of the 
+network are down).
+
+In other words, this distributed app needs to show the attributes of "Availability" and "Partition Tolerance".
+From the CAP theorem, we know that DBs with shared data can have at most two of the following three desired properties:
+- Consistency
+- Availability
+- Partition Tolerance
+Thus, in this case, the attribute of consistency will have to be forgone. This means that it will not be guaranteed that 
+every node always sees the same data at any given instance. 
+
+
+
+
+[5.3]
+'Eventual Consistency' is one of the B.A.S.E. properties that are guaranteed by distributed 
+database systems (like NoSQL). It means that the system will eventually (i.e. after running
+internal processes to do so) become consistent (i.e. all data replicas will reflect the exact
+same state), in the absence of updates.
+
+
+
+[5.4]
+I will make use of Amdahl's Law to quantify the level of possible speedup. 
+- Assume 'Tp' time units is the amount of time that parallel execution needs to complete on "p" processors, where p=3.
+- Assume 'T1' time units the amount of time that it takes to complete the program's execution sequentially.
+- A proportion 's' of the program is not parallelizable; s=1-0.25=0.75
+
+
+So the highest possible (theoretical) speedup is:
+T1/Tp = 1 / (s + (1-s) / p) = 1 / (0.75 + 0.25 / 3) = 1.2 => 20% speedup
+
+Of course, I need to point out that there are some over-simplifications that have taken place behind the scenes. 
+In more detail, this formula ignores the communication overhead that we need to incur as part of concurrent execution. 
+Moreover, it ignores the workload imbalances that may exist across tasks, leading to performance bottlenecks. 
+So this is the highest possible "theoretical" speedup. It cannot be actually attained. 
+
+
+
+[5.5]
+The setup of this problem has as follows:
+- Philosophers are sitting around a table. They alternate between thinking and eating. 
+- To eat, a philosopher needs two chopsticks; the one on their right and the one on 
+their left. 
+- The chopsticks are shared resources. 
+
+This is a typical setup in deadlock scenarios: 
+All philosophers could wake up synchronized. 
+They all grap their right chopstick. 
+They try (and actually persist) to grab their left chopstick, and do not yield even upon seeing that 
+eating right now is not feasible due to the need to wait for someone else to finish eating and holding
+their chopsticks.
+No progress is made; all stay perpetually hungry, and this is due to that they will not yield to the
+other philosophers - they will insist to take ownership of the common resource, but they remain permanently locked/blocked due
+to a circular dependency that prevents progress. 
+
+So a deadlock occurs, due to all its necessary conditions being met: 
+- Mutual exclusion (chopsticks can only be used by a single thread at a time)
+- Hold & Wait (threads do not yield the resource they've managed to acquire)
+- No pre-emption (no thread can forcibly take the resources of another)
+- Circular wait (each philosopher waits for another to let go of a resource, shaping a full circle).
+
+To break this deadlock, we need to overturn at least one of the conditions. The following solution fixes both the 
+"hold & wait one" and the circular wait. 
+More particularly, upturning the "hold & wait" condition means that now we will make philosophers let go of the chopstick 
+they have acquired after some failed tries to acquire the other chopstick as well.
+As for getting rid of circular wait, we will implement resource hierarchy. 
+
+Forever
+	Wakeup
+	
+	Try to grab lower-numbered chopstick (the one to their right)
+	
+	If successful, try to grab the other.
+	If unable to grab the other chopstick, implement a "retry backoff". Let go of the acquired one after some retries, 
+		but not immediately, so as to prevent starvation.
+	
+	Eat
+	
+	Let go of the higher-numbered chopstick.
+	Let go of the lower-numbered chopstick.
+	
+	Sleep
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
